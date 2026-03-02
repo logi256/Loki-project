@@ -10,15 +10,24 @@ app.secret_key = "smartbikepass_secret_key_2024"
 
 # Config
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-UPLOAD_FOLDER = os.path.join(BASE_DIR, "uploads")
-DB_PATH = os.path.join(BASE_DIR, "instance", "smartbike.db")
 ALLOWED_EXTENSIONS = {"pdf", "jpg", "jpeg", "png"}
+
+# Vercel (and other serverless platforms) have a read-only filesystem.
+# The only writable directory is /tmp. Detect this and use /tmp accordingly.
+IS_SERVERLESS = not os.access(BASE_DIR, os.W_OK)
+if IS_SERVERLESS:
+    UPLOAD_FOLDER = "/tmp/uploads"
+    DB_PATH = "/tmp/smartbike.db"
+else:
+    UPLOAD_FOLDER = os.path.join(BASE_DIR, "uploads")
+    DB_PATH = os.path.join(BASE_DIR, "instance", "smartbike.db")
 
 app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
 app.config["MAX_CONTENT_LENGTH"] = 16 * 1024 * 1024  # 16MB max
 
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
-os.makedirs(os.path.join(BASE_DIR, "instance"), exist_ok=True)
+if not IS_SERVERLESS:
+    os.makedirs(os.path.join(BASE_DIR, "instance"), exist_ok=True)
 
 
 # ─────────────────────────── DATABASE ───────────────────────────
