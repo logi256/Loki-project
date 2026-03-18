@@ -10,15 +10,26 @@ app.secret_key = "smartbikepass_secret_key_2024"
 
 # Config
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-UPLOAD_FOLDER = os.path.join(BASE_DIR, "uploads")
-DB_PATH = os.path.join(BASE_DIR, "instance", "smartbike.db")
+
+# On Vercel (and any serverless/Linux environment), the filesystem is read-only
+# except for /tmp. Detect Vercel by checking the VERCEL env var OR by checking
+# if we are running on a non-Windows system without a writable project directory.
+IS_VERCEL = os.environ.get("VERCEL") == "1" or os.path.exists("/var/task")
+
+if IS_VERCEL:
+    UPLOAD_FOLDER = "/tmp/uploads"
+    DB_PATH = "/tmp/smartbike.db"
+    os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+else:
+    UPLOAD_FOLDER = os.path.join(BASE_DIR, "uploads")
+    DB_PATH = os.path.join(BASE_DIR, "instance", "smartbike.db")
+    os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+    os.makedirs(os.path.join(BASE_DIR, "instance"), exist_ok=True)
+
 ALLOWED_EXTENSIONS = {"pdf", "jpg", "jpeg", "png"}
 
 app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
 app.config["MAX_CONTENT_LENGTH"] = 16 * 1024 * 1024  # 16MB max
-
-os.makedirs(UPLOAD_FOLDER, exist_ok=True)
-os.makedirs(os.path.join(BASE_DIR, "instance"), exist_ok=True)
 
 
 # ─────────────────────────── DATABASE ───────────────────────────
@@ -87,7 +98,23 @@ def init_db():
     conn.close()
 
 
-init_db()
+# Track whether DB has been initialized in this process
+_db_initialized = False
+
+def ensure_db():
+    """Initialize DB lazily and only once per process."""
+    global _db_initialized
+    if not _db_initialized:
+        try:
+            init_db()
+            _db_initialized = True
+        except Exception as e:
+            print(f"[WARNING] DB init failed: {e}")
+
+
+@app.before_request
+def before_request():
+    ensure_db()
 
 
 # ─────────────────────────── HELPERS ────────────────────────────
