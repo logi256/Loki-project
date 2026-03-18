@@ -8,8 +8,10 @@
   *{box-sizing:border-box;margin:0;padding:0}
   body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f4f8;min-height:100vh}
   nav{background:#0a192f;color:#fff;padding:14px 30px;display:flex;align-items:center;justify-content:space-between;box-shadow:0 2px 8px rgba(0,0,0,.3)}
-  nav .brand{font-size:1.2rem;font-weight:700;letter-spacing:.5px}
-  nav .brand span{color:#38bdf8}
+  nav .brand{display:flex;align-items:center;gap:10px;text-decoration:none;color:#fff}
+  nav .brand img{height:40px;width:auto;border-radius:4px}
+  nav .brand-text{font-size:1.2rem;font-weight:700;letter-spacing:.5px}
+  nav .brand-text span{color:#38bdf8}
   nav .nav-links a{color:#cbd5e1;text-decoration:none;margin-left:18px;font-size:.9rem;transition:color .2s}
   nav .nav-links a:hover{color:#38bdf8}
   .container{max-width:900px;margin:40px auto;padding:0 20px}
@@ -46,7 +48,10 @@
 </head>
 <body>
 <nav>
-  <div class="brand">🚲 Smart<span>Bike</span> Pass</div>
+  <a href="/" class="brand">
+    <img src="{{ url_for('static', filename='images/logo.avif') }}" alt="Logo">
+    <div class="brand-text">Smart<span>Bike</span> Pass</div>
+  </a>
   <div class="nav-links">
     <a href="/">Home</a>
     <a href="/apply">Apply</a>
