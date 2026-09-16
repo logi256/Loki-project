@@ -1,0 +1,6 @@
+{
+  "name": "Smart Bike Pass",
+  "description": "Smart Bike Pass management portal for students and staff with pass applications, transport review, principal approval, and digital QR passes.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
