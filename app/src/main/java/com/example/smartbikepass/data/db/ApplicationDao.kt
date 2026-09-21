@@ -16,16 +16,22 @@ interface ApplicationDao {
     @Query("SELECT * FROM applications ORDER BY id DESC")
     suspend fun getAllApplications(): List<ApplicationEntity>
 
-    @Query("SELECT * FROM applications WHERE pass_id = :passId LIMIT 1")
+    @Query("SELECT * FROM applications WHERE UPPER(pass_id) = UPPER(:passId) LIMIT 1")
     suspend fun getByPassId(passId: String): ApplicationEntity?
 
-    @Query("SELECT * FROM applications WHERE pass_id = :passId LIMIT 1")
+    @Query("SELECT * FROM applications WHERE UPPER(pass_id) = UPPER(:passId) LIMIT 1")
     fun getByPassIdFlow(passId: String): Flow<ApplicationEntity?>
 
-    @Query("SELECT * FROM applications WHERE status IN (:statuses) ORDER BY id DESC")
+    @Query("SELECT * FROM applications WHERE LOWER(roll_no) = LOWER(:rollNo) ORDER BY id DESC")
+    fun getApplicationsByRollNoFlow(rollNo: String): Flow<List<ApplicationEntity>>
+
+    @Query("SELECT * FROM applications WHERE LOWER(roll_no) = LOWER(:rollNo) ORDER BY id DESC")
+    suspend fun getApplicationsByRollNo(rollNo: String): List<ApplicationEntity>
+
+    @Query("SELECT * FROM applications WHERE LOWER(status) IN (:statuses) ORDER BY id DESC")
     fun getApplicationsByStatusesFlow(statuses: List<String>): Flow<List<ApplicationEntity>>
 
-    @Query("SELECT COUNT(*) FROM applications WHERE status = :status")
+    @Query("SELECT COUNT(*) FROM applications WHERE LOWER(status) = LOWER(:status)")
     fun getCountByStatusFlow(status: String): Flow<Int>
 
     @Query("SELECT COUNT(*) FROM applications")
@@ -40,10 +46,10 @@ interface ApplicationDao {
     @Update
     suspend fun update(application: ApplicationEntity)
 
-    @Query("UPDATE applications SET status = :status, transport_remarks = :remarks, transport_reviewed_at = :reviewedAt WHERE pass_id = :passId")
+    @Query("UPDATE applications SET status = :status, transport_remarks = :remarks, transport_reviewed_at = :reviewedAt WHERE UPPER(pass_id) = UPPER(:passId)")
     suspend fun updateTransportReview(passId: String, status: String, remarks: String?, reviewedAt: String)
 
-    @Query("UPDATE applications SET status = :status, principal_remarks = :remarks, principal_reviewed_at = :reviewedAt WHERE pass_id = :passId")
+    @Query("UPDATE applications SET status = :status, principal_remarks = :remarks, principal_reviewed_at = :reviewedAt WHERE UPPER(pass_id) = UPPER(:passId)")
     suspend fun updatePrincipalReview(passId: String, status: String, remarks: String?, reviewedAt: String)
 
     @Query("DELETE FROM applications")

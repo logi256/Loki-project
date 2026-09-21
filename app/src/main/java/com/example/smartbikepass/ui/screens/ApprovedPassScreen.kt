@@ -1,6 +1,13 @@
 package com.example.smartbikepass.ui.screens
 
 import android.content.Intent
+import androidx.compose.animation.core.EaseInOut
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -22,6 +29,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.DirectionsBike
+import androidx.compose.material.icons.filled.ElectricBike
 import androidx.compose.material.icons.filled.Security
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Verified
@@ -34,9 +42,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
@@ -47,22 +53,27 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.smartbikepass.data.model.ApplicationEntity
 import com.example.smartbikepass.ui.components.QrCodeView
 import com.example.smartbikepass.ui.theme.BackgroundLight
 import com.example.smartbikepass.ui.theme.BorderLight
+import com.example.smartbikepass.ui.theme.CyanAccent
 import com.example.smartbikepass.ui.theme.DeepNavy
+import com.example.smartbikepass.ui.theme.ElectricCyan
 import com.example.smartbikepass.ui.theme.EmeraldGreen
 import com.example.smartbikepass.ui.theme.EmeraldLight
-import com.example.smartbikepass.ui.theme.NavyLight
+import com.example.smartbikepass.ui.theme.GradientNavyEnd
+import com.example.smartbikepass.ui.theme.GradientNavyStart
 import com.example.smartbikepass.ui.theme.SkyBlue
+import com.example.smartbikepass.ui.theme.SkyBlueLight
 import com.example.smartbikepass.ui.theme.TextPrimary
 import com.example.smartbikepass.ui.theme.TextSecondary
 import com.example.smartbikepass.viewmodel.BikePassViewModel
@@ -123,7 +134,7 @@ fun ApprovedPassScreen(
                         }
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = DeepNavy)
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = GradientNavyStart)
             )
         }
     ) { innerPadding ->
@@ -165,27 +176,40 @@ fun DigitalPassCard(
     app: ApplicationEntity,
     modifier: Modifier = Modifier
 ) {
+    // Pulse animation for verified badge
+    val infiniteTransition = rememberInfiniteTransition(label = "pass_anim")
+    val pulseScale by infiniteTransition.animateFloat(
+        initialValue = 0.96f,
+        targetValue = 1.04f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(1500, easing = EaseInOut),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "verified_pulse"
+    )
+
     Card(
         colors = CardDefaults.cardColors(containerColor = Color.White),
-        border = androidx.compose.foundation.BorderStroke(2.dp, EmeraldGreen.copy(alpha = 0.6f)),
-        shape = RoundedCornerShape(16.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
-        modifier = modifier.fillMaxWidth()
+        border = BorderStroke(2.dp, EmeraldGreen.copy(alpha = 0.7f)),
+        shape = RoundedCornerShape(22.dp),
+        modifier = modifier
+            .fillMaxWidth()
+            .shadow(12.dp, RoundedCornerShape(22.dp), ambientColor = EmeraldGreen.copy(alpha = 0.15f))
     ) {
         Column(
             modifier = Modifier.fillMaxWidth(),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // Header Banner
+            // Header Banner with Gradient and Hologram Verified Badge
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
                     .background(
                         Brush.horizontalGradient(
-                            listOf(DeepNavy, Color(0xFF0F2E4A))
+                            listOf(GradientNavyStart, Color(0xFF064E3B), EmeraldGreen)
                         )
                     )
-                    .padding(vertical = 14.dp, horizontal = 16.dp)
+                    .padding(vertical = 16.dp, horizontal = 18.dp)
             ) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -195,55 +219,59 @@ fun DigitalPassCard(
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Box(
                             modifier = Modifier
-                                .size(34.dp)
+                                .size(40.dp)
                                 .clip(CircleShape)
-                                .background(EmeraldGreen),
+                                .background(Color.White.copy(alpha = 0.2f))
+                                .border(1.5.dp, Color.White.copy(alpha = 0.5f), CircleShape),
                             contentAlignment = Alignment.Center
                         ) {
                             Icon(
-                                Icons.Default.DirectionsBike,
+                                Icons.Default.ElectricBike,
                                 contentDescription = null,
                                 tint = Color.White,
-                                modifier = Modifier.size(20.dp)
+                                modifier = Modifier.size(24.dp)
                             )
                         }
-                        Spacer(modifier = Modifier.width(10.dp))
+                        Spacer(modifier = Modifier.width(12.dp))
                         Column {
                             Text(
                                 "SMART BIKE PASS",
                                 color = Color.White,
                                 fontWeight = FontWeight.ExtraBold,
-                                fontSize = 14.sp,
-                                letterSpacing = 1.sp
+                                fontSize = 15.sp,
+                                letterSpacing = 1.2.sp
                             )
                             Text(
-                                "College Campus Transport",
-                                color = SkyBlue,
+                                "Authorized Vehicle Permit",
+                                color = CyanAccent.copy(alpha = 0.9f),
                                 fontSize = 11.sp
                             )
                         }
                     }
 
-                    // Approved pill
+                    // Pulsing Approved Pill
                     Box(
                         modifier = Modifier
-                            .clip(RoundedCornerShape(12.dp))
+                            .scale(pulseScale)
+                            .clip(RoundedCornerShape(14.dp))
                             .background(EmeraldGreen)
-                            .padding(horizontal = 10.dp, vertical = 4.dp)
+                            .border(1.5.dp, Color.White.copy(alpha = 0.8f), RoundedCornerShape(14.dp))
+                            .padding(horizontal = 12.dp, vertical = 5.dp)
                     ) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Icon(
                                 Icons.Default.Verified,
                                 contentDescription = null,
                                 tint = Color.White,
-                                modifier = Modifier.size(13.dp)
+                                modifier = Modifier.size(15.dp)
                             )
-                            Spacer(modifier = Modifier.width(4.dp))
+                            Spacer(modifier = Modifier.width(5.dp))
                             Text(
                                 "APPROVED",
                                 color = Color.White,
-                                fontSize = 10.sp,
-                                fontWeight = FontWeight.Bold
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.ExtraBold,
+                                letterSpacing = 0.8.sp
                             )
                         }
                     }
@@ -257,8 +285,8 @@ fun DigitalPassCard(
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 // Pass ID Banner
-                Text("OFFICIAL DIGITAL PASS ID", fontSize = 10.sp, color = TextSecondary, fontWeight = FontWeight.Bold)
-                Spacer(modifier = Modifier.height(2.dp))
+                Text("OFFICIAL DIGITAL PASS ID", fontSize = 10.sp, color = TextSecondary, fontWeight = FontWeight.Bold, letterSpacing = 0.8.sp)
+                Spacer(modifier = Modifier.height(4.dp))
                 Text(
                     text = app.passId,
                     fontSize = 22.sp,
@@ -269,53 +297,65 @@ fun DigitalPassCard(
 
                 Spacer(modifier = Modifier.height(18.dp))
 
-                // QR Code
-                // QR data format: {{ data.pass_id }}|{{ data.vehicle_no }}|{{ data.full_name }}
+                // QR Code with glowing frame
                 val qrData = "${app.passId}|${app.vehicleNo}|${app.fullName}"
-                QrCodeView(data = qrData, size = 180.dp)
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(18.dp))
+                        .background(Color(0xFFF8FAFC))
+                        .border(2.dp, SkyBlue.copy(alpha = 0.25f), RoundedCornerShape(18.dp))
+                        .padding(14.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    QrCodeView(data = qrData, size = 180.dp)
+                }
 
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(10.dp))
                 Text(
-                    text = "Scan at Main Gate Checkpoint",
-                    fontSize = 11.sp,
+                    text = "Present at Main Gate Scanner",
+                    fontSize = 12.sp,
                     color = TextSecondary,
                     fontWeight = FontWeight.Medium
                 )
 
                 Spacer(modifier = Modifier.height(18.dp))
                 HorizontalDivider(color = BorderLight)
-                Spacer(modifier = Modifier.height(14.dp))
+                Spacer(modifier = Modifier.height(16.dp))
 
-                // Vehicle Box
+                // Authorized Vehicle Plate Card
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clip(RoundedCornerShape(10.dp))
-                        .background(Color(0xFFF1F5F9))
-                        .border(1.dp, BorderLight, RoundedCornerShape(10.dp))
-                        .padding(12.dp),
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(
+                            Brush.verticalGradient(
+                                listOf(Color(0xFFF1F5F9), Color(0xFFE2E8F0))
+                            )
+                        )
+                        .border(1.5.dp, BorderLight, RoundedCornerShape(12.dp))
+                        .padding(14.dp),
                     contentAlignment = Alignment.Center
                 ) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text("AUTHORISED VEHICLE NUMBER", fontSize = 10.sp, color = TextSecondary, fontWeight = FontWeight.Bold)
-                        Spacer(modifier = Modifier.height(2.dp))
+                        Text("AUTHORISED VEHICLE NUMBER", fontSize = 10.sp, color = TextSecondary, fontWeight = FontWeight.Bold, letterSpacing = 0.8.sp)
+                        Spacer(modifier = Modifier.height(4.dp))
                         Text(
                             text = app.vehicleNo,
-                            fontSize = 20.sp,
+                            fontSize = 22.sp,
                             fontWeight = FontWeight.ExtraBold,
                             color = DeepNavy,
-                            letterSpacing = 1.sp
+                            letterSpacing = 1.5.sp
                         )
                         Text(
                             text = app.vehicleType,
-                            fontSize = 11.sp,
+                            fontSize = 12.sp,
                             color = SkyBlue,
-                            fontWeight = FontWeight.SemiBold
+                            fontWeight = FontWeight.Bold
                         )
                     }
                 }
 
-                Spacer(modifier = Modifier.height(14.dp))
+                Spacer(modifier = Modifier.height(16.dp))
 
                 // Student details table
                 PassRow("Student Name", app.fullName)
@@ -327,11 +367,11 @@ fun DigitalPassCard(
                     PassRow("Principal Sign", app.principalRemarks)
                 }
 
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(18.dp))
                 HorizontalDivider(color = BorderLight)
-                Spacer(modifier = Modifier.height(12.dp))
+                Spacer(modifier = Modifier.height(14.dp))
 
-                // Security validity footer
+                // Security validity footer with shield
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically,
@@ -341,12 +381,12 @@ fun DigitalPassCard(
                         Icons.Default.Security,
                         contentDescription = null,
                         tint = EmeraldGreen,
-                        modifier = Modifier.size(16.dp)
+                        modifier = Modifier.size(18.dp)
                     )
                     Spacer(modifier = Modifier.width(6.dp))
                     Text(
-                        text = "Valid for Current Academic Year",
-                        fontSize = 12.sp,
+                        text = "Valid for Current Academic Year • Digital Signature Verified",
+                        fontSize = 11.sp,
                         fontWeight = FontWeight.SemiBold,
                         color = EmeraldGreen
                     )
@@ -361,7 +401,7 @@ fun PassRow(label: String, value: String) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 3.dp),
+            .padding(vertical = 4.dp),
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
         Text(text = label, fontSize = 12.sp, color = TextSecondary)

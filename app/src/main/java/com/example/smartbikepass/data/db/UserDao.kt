@@ -8,10 +8,10 @@ import com.example.smartbikepass.data.model.UserEntity
 
 @Dao
 interface UserDao {
-    @Query("SELECT * FROM users WHERE username = :username AND password = :password LIMIT 1")
+    @Query("SELECT * FROM users WHERE LOWER(username) = LOWER(:username) AND password = :password LIMIT 1")
     suspend fun authenticate(username: String, password: String): UserEntity?
 
-    @Query("SELECT * FROM users WHERE username = :username LIMIT 1")
+    @Query("SELECT * FROM users WHERE LOWER(username) = LOWER(:username) LIMIT 1")
     suspend fun getByUsername(username: String): UserEntity?
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)

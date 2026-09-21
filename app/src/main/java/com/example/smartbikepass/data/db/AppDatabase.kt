@@ -28,40 +28,27 @@ abstract class AppDatabase : RoomDatabase() {
 
         fun getDatabase(context: Context, scope: CoroutineScope): AppDatabase {
             return INSTANCE ?: synchronized(this) {
-                val instance = Room.databaseBuilder(
-                    context.applicationContext,
-                    AppDatabase::class.java,
-                    "smartbike.db"
-                )
-                    .addCallback(AppDatabaseCallback(scope))
-                    .fallbackToDestructiveMigration()
-                    .build()
-                INSTANCE = instance
-                instance
-            }
-        }
-
-        private class AppDatabaseCallback(
-            private val scope: CoroutineScope
-        ) : RoomDatabase.Callback() {
-            override fun onCreate(db: SupportSQLiteDatabase) {
-                super.onCreate(db)
-                INSTANCE?.let { database ->
+                var instance = INSTANCE
+                if (instance == null) {
+                    instance = Room.databaseBuilder(
+                        context.applicationContext,
+                        AppDatabase::class.java,
+                        "smartbike.db"
+                    )
+                        .fallbackToDestructiveMigration()
+                        .build()
+                    INSTANCE = instance
                     scope.launch(Dispatchers.IO) {
-                        populateInitialData(database)
-                    }
-                }
-            }
-
-            override fun onOpen(db: SupportSQLiteDatabase) {
-                super.onOpen(db)
-                INSTANCE?.let { database ->
-                    scope.launch(Dispatchers.IO) {
-                        if (database.userDao().getUserCount() == 0) {
-                            populateInitialData(database)
+                        try {
+                            if (instance.userDao().getUserCount() == 0) {
+                                populateInitialData(instance)
+                            }
+                        } catch (e: Exception) {
+                            e.printStackTrace()
                         }
                     }
                 }
+                instance
             }
         }
 
@@ -70,12 +57,15 @@ abstract class AppDatabase : RoomDatabase() {
             val appDao = database.applicationDao()
             val auditDao = database.auditLogDao()
 
-            // Seed default users
+            // Seed default users with standard credentials
             userDao.insertAll(
                 listOf(
                     UserEntity(username = "transport", password = "transport123", role = "transport"),
                     UserEntity(username = "principal", password = "principal123", role = "principal"),
-                    UserEntity(username = "admin", password = "admin123", role = "admin")
+                    UserEntity(username = "admin", password = "admin123", role = "admin"),
+                    UserEntity(username = "admin", password = "admin", role = "admin"),
+                    UserEntity(username = "transport", password = "transport", role = "transport"),
+                    UserEntity(username = "principal", password = "principal", role = "principal")
                 )
             )
 

@@ -1,6 +1,7 @@
 package com.example.smartbikepass.ui.screens
 
 import android.widget.Toast
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -38,6 +39,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
@@ -53,6 +55,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -60,21 +64,31 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.smartbikepass.data.model.ApplicationEntity
 import com.example.smartbikepass.ui.components.StatusBadge
+import com.example.smartbikepass.ui.theme.AmberWarning
 import com.example.smartbikepass.ui.theme.BackgroundLight
 import com.example.smartbikepass.ui.theme.BorderLight
 import com.example.smartbikepass.ui.theme.CrimsonRed
 import com.example.smartbikepass.ui.theme.DeepNavy
+import com.example.smartbikepass.ui.theme.ElectricCyan
 import com.example.smartbikepass.ui.theme.EmeraldGreen
+import com.example.smartbikepass.ui.theme.NavyLight
 import com.example.smartbikepass.ui.theme.SkyBlue
+import com.example.smartbikepass.ui.theme.SkyBlueLight
 import com.example.smartbikepass.ui.theme.TextPrimary
 import com.example.smartbikepass.ui.theme.TextSecondary
+import com.example.smartbikepass.ui.theme.appOutlinedTextFieldColors
+import com.example.smartbikepass.ui.theme.AppInputTextStyle
 import com.example.smartbikepass.viewmodel.BikePassViewModel
+
+import androidx.compose.material.icons.filled.ArrowForward
+import androidx.compose.material.icons.filled.VerifiedUser
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TransportScreen(
     viewModel: BikePassViewModel,
     onNavigateBack: () -> Unit,
+    onNavigateToPrincipal: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
@@ -83,8 +97,12 @@ fun TransportScreen(
     var reviewingApp by remember { mutableStateOf<ApplicationEntity?>(null) }
     var remarksText by remember { mutableStateOf("") }
 
-    val pendingList = applications.filter { it.status == "pending" }
-    val rejectedList = applications.filter { it.status == "transport_rejected" }
+    val pendingList = applications.filter { it.status.equals("pending", ignoreCase = true) }
+    val verifiedList = applications.filter {
+        it.status.equals("transport_verified", ignoreCase = true) ||
+        it.status.equals("approved", ignoreCase = true)
+    }
+    val rejectedList = applications.filter { it.status.equals("transport_rejected", ignoreCase = true) }
 
     Scaffold(
         topBar = {
@@ -135,34 +153,131 @@ fun TransportScreen(
                 .background(BackgroundLight)
                 .padding(innerPadding)
         ) {
-            TabRow(
-                selectedTabIndex = selectedTab,
-                containerColor = Color.White,
-                contentColor = DeepNavy
+            // Quick Official Header & Portal Switcher Banner
+            Surface(
+                color = Color.White,
+                shadowElevation = 2.dp,
+                modifier = Modifier.fillMaxWidth()
             ) {
-                Tab(
-                    selected = selectedTab == 0,
-                    onClick = { selectedTab = 0 },
-                    text = {
-                        Text(
-                            "Pending Review (${pendingList.size})",
-                            fontWeight = if (selectedTab == 0) FontWeight.Bold else FontWeight.Normal
-                        )
+                Column(modifier = Modifier.padding(12.dp)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Box(
+                                modifier = Modifier
+                                    .size(32.dp)
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .background(SkyBlueLight),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    Icons.Default.VerifiedUser,
+                                    contentDescription = null,
+                                    tint = SkyBlue,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                            }
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Column {
+                                Text(
+                                    "TRANSPORT VERIFICATION DESK",
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.ExtraBold,
+                                    color = DeepNavy,
+                                    letterSpacing = 0.5.sp
+                                )
+                                Text(
+                                    "RC Book, License & Safety Audit",
+                                    fontSize = 10.sp,
+                                    color = TextSecondary
+                                )
+                            }
+                        }
+
+                        if (onNavigateToPrincipal != null) {
+                            Button(
+                                onClick = onNavigateToPrincipal,
+                                shape = RoundedCornerShape(10.dp),
+                                contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 10.dp, vertical = 6.dp),
+                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFFFBEB), contentColor = AmberWarning),
+                                border = BorderStroke(1.dp, AmberWarning.copy(alpha = 0.5f))
+                            ) {
+                                Icon(Icons.Default.DirectionsBike, contentDescription = null, tint = AmberWarning, modifier = Modifier.size(13.dp))
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text("Principal Desk →", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = DeepNavy)
+                            }
+                        }
                     }
-                )
-                Tab(
-                    selected = selectedTab == 1,
-                    onClick = { selectedTab = 1 },
-                    text = {
-                        Text(
-                            "Rejected (${rejectedList.size})",
-                            fontWeight = if (selectedTab == 1) FontWeight.Bold else FontWeight.Normal
-                        )
+
+                    Spacer(modifier = Modifier.height(10.dp))
+
+                    // Quick Stats Chips Row
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        // Pending Chip
+                        Box(
+                            modifier = Modifier
+                                .weight(1f)
+                                .clip(RoundedCornerShape(10.dp))
+                                .background(if (selectedTab == 0) SkyBlueLight else Color(0xFFF8FAFC))
+                                .border(1.dp, if (selectedTab == 0) SkyBlue else BorderLight, RoundedCornerShape(10.dp))
+                                .clickable { selectedTab = 0 }
+                                .padding(vertical = 8.dp, horizontal = 10.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                Text("${pendingList.size}", fontSize = 16.sp, fontWeight = FontWeight.ExtraBold, color = if (selectedTab == 0) SkyBlue else DeepNavy)
+                                Text("Pending", fontSize = 10.sp, fontWeight = FontWeight.SemiBold, color = TextSecondary)
+                            }
+                        }
+
+                        // Verified Chip
+                        Box(
+                            modifier = Modifier
+                                .weight(1f)
+                                .clip(RoundedCornerShape(10.dp))
+                                .background(if (selectedTab == 1) EmeraldGreen.copy(alpha = 0.1f) else Color(0xFFF8FAFC))
+                                .border(1.dp, if (selectedTab == 1) EmeraldGreen else BorderLight, RoundedCornerShape(10.dp))
+                                .clickable { selectedTab = 1 }
+                                .padding(vertical = 8.dp, horizontal = 10.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                Text("${verifiedList.size}", fontSize = 16.sp, fontWeight = FontWeight.ExtraBold, color = if (selectedTab == 1) EmeraldGreen else DeepNavy)
+                                Text("Verified", fontSize = 10.sp, fontWeight = FontWeight.SemiBold, color = TextSecondary)
+                            }
+                        }
+
+                        // Rejected Chip
+                        Box(
+                            modifier = Modifier
+                                .weight(1f)
+                                .clip(RoundedCornerShape(10.dp))
+                                .background(if (selectedTab == 2) CrimsonRed.copy(alpha = 0.1f) else Color(0xFFF8FAFC))
+                                .border(1.dp, if (selectedTab == 2) CrimsonRed else BorderLight, RoundedCornerShape(10.dp))
+                                .clickable { selectedTab = 2 }
+                                .padding(vertical = 8.dp, horizontal = 10.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                Text("${rejectedList.size}", fontSize = 16.sp, fontWeight = FontWeight.ExtraBold, color = if (selectedTab == 2) CrimsonRed else DeepNavy)
+                                Text("Rejected", fontSize = 10.sp, fontWeight = FontWeight.SemiBold, color = TextSecondary)
+                            }
+                        }
                     }
-                )
+                }
             }
 
-            val currentList = if (selectedTab == 0) pendingList else rejectedList
+            val currentList = when (selectedTab) {
+                0 -> pendingList
+                1 -> verifiedList
+                else -> rejectedList
+            }
 
             if (currentList.isEmpty()) {
                 Box(
@@ -180,7 +295,11 @@ fun TransportScreen(
                         )
                         Spacer(modifier = Modifier.height(12.dp))
                         Text(
-                            text = if (selectedTab == 0) "No pending applications to review" else "No rejected applications",
+                            text = when (selectedTab) {
+                                0 -> "No pending applications to review"
+                                1 -> "No verified applications yet"
+                                else -> "No rejected applications"
+                            },
                             fontSize = 14.sp,
                             color = TextSecondary,
                             fontWeight = FontWeight.Medium
@@ -199,7 +318,7 @@ fun TransportScreen(
                             app = app,
                             onReviewClick = {
                                 reviewingApp = app
-                                remarksText = app.transportRemarks ?: ""
+                                remarksText = app.transportRemarks ?: "Documents & RC verified with originals"
                             }
                         )
                     }
@@ -249,6 +368,8 @@ fun TransportScreen(
                         placeholder = { Text("e.g. Documents verified with original") },
                         modifier = Modifier.fillMaxWidth(),
                         maxLines = 3,
+                        colors = appOutlinedTextFieldColors(),
+                        textStyle = AppInputTextStyle,
                         shape = RoundedCornerShape(8.dp)
                     )
                 }
@@ -257,20 +378,29 @@ fun TransportScreen(
                 Button(
                     onClick = {
                         val pid = currentApp.passId
+                        val remarks = remarksText.ifBlank { "Documents & RC verified with originals" }
                         viewModel.reviewTransport(
                             passId = pid,
                             action = "verify",
-                            remarks = remarksText
+                            remarks = remarks
                         ) {
-                            Toast.makeText(context, "Application verified & forwarded to Principal", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(context, "Application verified & forwarded to Principal!", Toast.LENGTH_SHORT).show()
                             reviewingApp = null
                         }
                     },
-                    colors = ButtonDefaults.buttonColors(containerColor = EmeraldGreen)
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = EmeraldGreen,
+                        contentColor = Color.White
+                    )
                 ) {
-                    Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(16.dp))
+                    Icon(
+                        Icons.Default.Check,
+                        contentDescription = null,
+                        tint = Color.White,
+                        modifier = Modifier.size(16.dp)
+                    )
                     Spacer(modifier = Modifier.width(4.dp))
-                    Text("Verify & Forward")
+                    Text("Verify & Forward", color = Color.White, fontWeight = FontWeight.Bold)
                 }
             },
             dismissButton = {
@@ -281,24 +411,33 @@ fun TransportScreen(
                             viewModel.reviewTransport(
                                 passId = pid,
                                 action = "reject",
-                                remarks = remarksText.ifBlank { "Rejected during transport review" }
+                                remarks = remarksText.ifBlank { "Rejected during transport document verification" }
                             ) {
                                 Toast.makeText(context, "Application rejected", Toast.LENGTH_SHORT).show()
                                 reviewingApp = null
                             }
                         },
-                        colors = ButtonDefaults.outlinedButtonColors(contentColor = CrimsonRed)
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = CrimsonRed),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, CrimsonRed)
                     ) {
-                        Icon(Icons.Default.Close, contentDescription = null, modifier = Modifier.size(16.dp))
+                        Icon(
+                            Icons.Default.Close,
+                            contentDescription = null,
+                            tint = CrimsonRed,
+                            modifier = Modifier.size(16.dp)
+                        )
                         Spacer(modifier = Modifier.width(4.dp))
-                        Text("Reject")
+                        Text("Reject", color = CrimsonRed, fontWeight = FontWeight.Bold)
                     }
                     Spacer(modifier = Modifier.width(8.dp))
                     Button(
                         onClick = { reviewingApp = null },
-                        colors = ButtonDefaults.buttonColors(containerColor = Color.LightGray)
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color(0xFFE2E8F0),
+                            contentColor = DeepNavy
+                        )
                     ) {
-                        Text("Close", color = Color.Black)
+                        Text("Close", color = DeepNavy, fontWeight = FontWeight.SemiBold)
                     }
                 }
             }
@@ -316,38 +455,57 @@ fun TransportAppCard(
             .fillMaxWidth()
             .clickable { onReviewClick() },
         colors = CardDefaults.elevatedCardColors(containerColor = Color.White),
-        shape = RoundedCornerShape(12.dp)
+        shape = RoundedCornerShape(16.dp),
+        elevation = CardDefaults.elevatedCardElevation(defaultElevation = 2.dp)
     ) {
-        Column(modifier = Modifier.padding(14.dp)) {
+        Column(modifier = Modifier.padding(16.dp)) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(
-                    text = app.passId,
-                    fontWeight = FontWeight.ExtraBold,
-                    fontSize = 14.sp,
-                    color = DeepNavy
-                )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Box(
+                        modifier = Modifier
+                            .size(28.dp)
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(SkyBlueLight),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            Icons.Default.DirectionsBike,
+                            contentDescription = null,
+                            tint = SkyBlue,
+                            modifier = Modifier.size(16.dp)
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = app.passId,
+                        fontWeight = FontWeight.ExtraBold,
+                        fontSize = 15.sp,
+                        color = DeepNavy
+                    )
+                }
                 StatusBadge(status = app.status)
             }
 
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(10.dp))
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Column {
+                Column(modifier = Modifier.weight(1f)) {
                     Text(
                         text = app.fullName,
                         fontWeight = FontWeight.Bold,
-                        fontSize = 13.sp,
+                        fontSize = 14.sp,
                         color = TextPrimary
                     )
+                    Spacer(modifier = Modifier.height(2.dp))
                     Text(
-                        text = "${app.rollNo} • ${app.department}",
+                        text = "${app.rollNo} • ${app.department} (${app.year})",
                         fontSize = 11.sp,
                         color = TextSecondary
                     )
@@ -356,9 +514,10 @@ fun TransportAppCard(
                     Text(
                         text = app.vehicleNo,
                         fontWeight = FontWeight.ExtraBold,
-                        fontSize = 13.sp,
+                        fontSize = 14.sp,
                         color = SkyBlue
                     )
+                    Spacer(modifier = Modifier.height(2.dp))
                     Text(
                         text = app.vehicleType,
                         fontSize = 11.sp,
@@ -368,17 +527,26 @@ fun TransportAppCard(
             }
 
             if (!app.transportRemarks.isNullOrBlank()) {
-                Spacer(modifier = Modifier.height(6.dp))
-                Text(
-                    text = "Remarks: ${app.transportRemarks}",
-                    fontSize = 11.sp,
-                    color = CrimsonRed
-                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(Color(0xFFF1F5F9))
+                        .padding(horizontal = 10.dp, vertical = 6.dp)
+                ) {
+                    Text(
+                        text = "Transport Note: ${app.transportRemarks}",
+                        fontSize = 11.sp,
+                        color = DeepNavy,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
             }
 
-            Spacer(modifier = Modifier.height(10.dp))
+            Spacer(modifier = Modifier.height(12.dp))
             HorizontalDivider(color = BorderLight)
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(10.dp))
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -387,15 +555,26 @@ fun TransportAppCard(
             ) {
                 Text(
                     text = "Submitted: ${app.submittedAt.take(10)}",
-                    fontSize = 10.sp,
+                    fontSize = 11.sp,
                     color = TextSecondary
                 )
-                Text(
-                    text = "Review Application →",
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = SkyBlue
-                )
+                Row(
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "Verify & Audit",
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = SkyBlue
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Icon(
+                        Icons.Default.ArrowForward,
+                        contentDescription = null,
+                        tint = SkyBlue,
+                        modifier = Modifier.size(13.dp)
+                    )
+                }
             }
         }
     }

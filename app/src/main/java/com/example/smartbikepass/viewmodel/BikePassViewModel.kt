@@ -15,6 +15,11 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
+data class StudentUser(
+    val rollNo: String,
+    val dob: String
+)
+
 sealed interface SubmitUiState {
     data object Idle : SubmitUiState
     data object Submitting : SubmitUiState
@@ -41,6 +46,13 @@ class BikePassViewModel(
     private val _loginError = MutableStateFlow<String?>(null)
     val loginError: StateFlow<String?> = _loginError.asStateFlow()
 
+    // Student Session State (Roll No & DOB)
+    private val _currentStudent = MutableStateFlow<StudentUser?>(null)
+    val currentStudent: StateFlow<StudentUser?> = _currentStudent.asStateFlow()
+
+    private val _studentLoginError = MutableStateFlow<String?>(null)
+    val studentLoginError: StateFlow<String?> = _studentLoginError.asStateFlow()
+
     // Application Submission State
     private val _submitState = MutableStateFlow<SubmitUiState>(SubmitUiState.Idle)
     val submitState: StateFlow<SubmitUiState> = _submitState.asStateFlow()
@@ -61,11 +73,11 @@ class BikePassViewModel(
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     val transportApplications: StateFlow<List<ApplicationEntity>> =
-        repository.getApplicationsByStatusesFlow(listOf("pending", "transport_rejected"))
+        repository.getApplicationsByStatusesFlow(listOf("pending", "transport_verified", "transport_rejected", "approved"))
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     val principalApplications: StateFlow<List<ApplicationEntity>> =
-        repository.getApplicationsByStatusesFlow(listOf("transport_verified"))
+        repository.getApplicationsByStatusesFlow(listOf("transport_verified", "approved", "principal_rejected"))
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     val auditLogs: StateFlow<List<AuditLogEntity>> =
@@ -76,17 +88,77 @@ class BikePassViewModel(
         repository.getStatsFlow()
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), PassStats())
 
+    fun quickLoginRole(role: String, onSuccess: (role: String) -> Unit) {
+        val r = role.lowercase().trim()
+        val username = when (r) {
+            "principal" -> "principal"
+            else -> "transport"
+        }
+        val user = UserEntity(
+            id = when (r) {
+                "principal" -> 902L
+                else -> 901L
+            },
+            username = username,
+            password = "",
+            role = if (r == "principal") "principal" else "transport"
+        )
+        _currentUser.value = user
+        _loginError.value = null
+        onSuccess(user.role)
+    }
+
     fun login(username: String, password: String, onSuccess: (role: String) -> Unit) {
+        val u = username.trim()
+        val p = password.trim()
+        if (u.isBlank()) {
+            _loginError.value = "Please enter your User ID (e.g. transport, principal)"
+            return
+        }
+        if (p.isBlank()) {
+            _loginError.value = "Please enter your Password (e.g. transport123)"
+            return
+        }
         viewModelScope.launch {
             _loginError.value = null
-            val user = repository.authenticate(username, password)
+            val user = repository.authenticate(u, p)
             if (user != null) {
                 _currentUser.value = user
                 onSuccess(user.role)
             } else {
-                _loginError.value = "Invalid username or password"
+                _loginError.value = "Invalid User ID or password"
             }
         }
+    }
+
+    fun loginStudent(rollNo: String, dob: String, onSuccess: () -> Unit) {
+        val trimmedRoll = rollNo.trim().uppercase(java.util.Locale.ROOT)
+        val trimmedDob = dob.trim()
+        if (trimmedRoll.isBlank()) {
+            _studentLoginError.value = "Please enter your Student Roll Number"
+            return
+        }
+        if (trimmedDob.isBlank()) {
+            _studentLoginError.value = "Please enter your Date of Birth (DD/MM/YYYY)"
+            return
+        }
+        _studentLoginError.value = null
+        _currentStudent.value = StudentUser(rollNo = trimmedRoll, dob = trimmedDob)
+
+        viewModelScope.launch {
+            // Check if student already has passes and add them to recent list
+            val studentApps = repository.getApplicationsByRollNo(trimmedRoll)
+            if (studentApps.isNotEmpty()) {
+                val newPassIds = (_recentPassIds.value + studentApps.map { it.passId }).distinct()
+                _recentPassIds.value = newPassIds
+            }
+            onSuccess()
+        }
+    }
+
+    fun logoutStudent() {
+        _currentStudent.value = null
+        _studentLoginError.value = null
     }
 
     fun logout() {
